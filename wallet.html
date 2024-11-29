@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我的钱包 - 趣玩星球</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #F7F7F7;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .red-packet {
+            background: linear-gradient(to bottom, #FA9E3B, #ED4014);
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            color: #fff;
+            margin: 20px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .balance-label {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .balance-amount {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            padding: 0 20px;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fff;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-btn img {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 5px;
+        }
+
+        .action-btn span {
+            font-size: 14px;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        /* 充值和提现面板样式 */
+        .operation-panel {
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .operation-panel.show {
+            transform: translateY(0);
+        }
+
+        .panel-header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .amount-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .amount-item {
+            background: #F7F7F7;
+            border: 1px solid #E5E5E5;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .amount-item.selected {
+            background: #FFF0E5;
+            border-color: #FA9E3B;
+            color: #FA9E3B;
+        }
+
+        .custom-input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #E5E5E5;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .confirm-btn {
+            background: linear-gradient(to right, #FA9E3B, #ED4014);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 红包样式的余额显示 -->
+        <div class="red-packet">
+            <p class="balance-label">账户余额</p>
+            <h1 class="balance-amount" id="walletBalance">￥0.00</h1>
+        </div>
+
+        <!-- 充值和提现按钮 -->
+        <div class="action-buttons">
+            <button class="action-btn" onclick="showRechargePanel()">
+                <img src="https://s1.imagehub.cc/images/2024/11/29/e2013a7a61afcbdc886702f4906e7f50.png" alt="充值">
+                <span>充值</span>
+            </button>
+            <button class="action-btn" onclick="showWithdrawPanel()">
+                <img src="https://s1.imagehub.cc/images/2024/11/29/59643c9eec54211083d830bd14e8c150.png" alt="提现">
+                <span>提现</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 充值面板 -->
+    <div class="operation-panel" id="rechargePanel">
+        <div class="panel-header">
+            <h3>账户充值</h3>
+            <div class="close-btn" onclick="hidePanel('rechargePanel')">
+                <i class="fas fa-times"></i>
+            </div>
+        </div>
+        <div class="amount-grid">
+            <div class="amount-item" onclick="selectAmount(this, 50)">￥50</div>
+            <div class="amount-item" onclick="selectAmount(this, 100)">￥100</div>
+            <div class="amount-item" onclick="selectAmount(this, 200)">￥200</div>
+            <div class="amount-item" onclick="selectAmount(this, 500)">￥500</div>
+            <div class="amount-item" onclick="selectAmount(this, 1000)">￥1000</div>
+            <div class="amount-item" onclick="showCustomInput()">自定义</div>
+        </div>
+        <input type="number" class="custom-input" id="customAmount" placeholder="请输入充值金额" style="display: none;">
+        <button class="confirm-btn" onclick="confirmRecharge()">确认充值</button>
+    </div>
+
+    <!-- 提现面板 -->
+    <div class="operation-panel" id="withdrawPanel">
+        <div class="panel-header">
+            <h3>账户提现</h3>
+            <div class="close-btn" onclick="hidePanel('withdrawPanel')">
+                <i class="fas fa-times"></i>
+            </div>
+        </div>
+        <input type="number" class="custom-input" placeholder="请输入提现金额">
+        <button class="confirm-btn" onclick="confirmWithdraw()">确认提现</button>
+    </div>
+
+    <!-- 遮罩层 -->
+    <div class="overlay" id="overlay"></div>
+
+    <script>
+        function showRechargePanel() {
+            document.getElementById('rechargePanel').classList.add('show');
+            document.getElementById('overlay').classList.add('show');
+        }
+
+        function showWithdrawPanel() {
+            document.getElementById('withdrawPanel').classList.add('show');
+            document.getElementById('overlay').classList.add('show');
+        }
+
+        function hidePanel(panelId) {
+            document.getElementById(panelId).classList.remove('show');
+            document.getElementById('overlay').classList.remove('show');
+        }
+
+        function selectAmount(element, amount) {
+            // 移除其他选中状态
+            document.querySelectorAll('.amount-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            // 添加选中状态
+            element.classList.add('selected');
+            // 隐藏自定义输入框
+            document.getElementById('customAmount').style.display = 'none';
+        }
+
+        function showCustomInput() {
+            document.getElementById('customAmount').style.display = 'block';
+            // 移除其他选中状态
+            document.querySelectorAll('.amount-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+        }
+
+        // 添加手势返回功能
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, false);
+        
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, false);
+        
+        function handleSwipe() {
+            const swipeDistance = touchEndX - touchStartX;
+            const minSwipeDistance = 100;
+            
+            if (swipeDistance > minSwipeDistance) {
+                history.back();
+            }
+        }
+
+        // 点击遮罩层关闭面板
+        document.getElementById('overlay').addEventListener('click', function() {
+            document.querySelectorAll('.operation-panel').forEach(panel => {
+                panel.classList.remove('show');
+            });
+            this.classList.remove('show');
+        });
+    </script>
+</body>
+</html> 
